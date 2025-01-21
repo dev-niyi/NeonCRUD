@@ -1,47 +1,45 @@
-# Create your views here.
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from .models import BookModel
 from rest_framework import status
-from .models import Book
 from .serializers import BookSerializer
+from rest_framework.parsers import MultiPartParser, FormParser
 
 class BookView(APIView):
-    def get(self, request):
-        books = Book.objects.all()
-        serializer = BookSerializer(books, many=True)
-        return Response(serializer.data)
+    parser_classes = (MultiPartParser, FormParser)
 
+    def get(self, request):
+        tasks = BookModel.objects.all()
+        serializer = BookSerializer(tasks, many=True)
+        return Response({"message": "Task get request successful", "data": serializer.data})
+    
     def post(self, request):
         serializer = BookSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class BookDetailView(APIView):
-    def get(self, request, pk):
-        try:
-            book = Book.objects.get(pk=pk)
-            serializer = BookSerializer(book)
-            return Response(serializer.data)
-        except Book.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
+            return Response({"message": "Post request successful"})
+        else:
+            return Response({"message": "Post request unsuccessful", "error": serializer.errors})
+    
     def put(self, request, pk):
         try:
-            book = Book.objects.get(pk=pk)
-            serializer = BookSerializer(book, data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Book.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            data_in_base = BookModel.objects.get(pk=pk)
+        except BookModel.DoesNotExist:
+            return Response({"message": "Data doesn't exist."}, status=status.HTTP_404_NOT_FOUND)
+        
+        serialzer = BookSerializer(data_in_base, data=request.data)
 
+        if serialzer.is_valid():
+            serialzer.save()
+            return Response({"message": "Put request successful"})
+        else:
+            return Response({"message": "Post request unsuccessful", "error": serialzer.errors})
+    
     def delete(self, request, pk):
         try:
-            book = Book.objects.get(pk=pk)
-            book.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Book.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            data_in_base = BookModel.objects.get(pk=pk)
+        except BookModel.DoesNotExist:
+            return Response({"message": "Data doesn't exist."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        data_in_base.delete()
+        return Response({"message": "Delete request successful"}, status=status.HTTP_204_NO_CONTENT)
